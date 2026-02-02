@@ -333,6 +333,18 @@ func (a *Assertions) Eventually(condition func() bool, waitFor time.Duration, ti
 	return Eventually(a.t, condition, waitFor, tick, msgAndArgs...)
 }
 
+// EventuallyWithBackoff asserts that given condition will be met in waitFor time,
+// periodically checking target function each tick, where the tick intervals
+// are determined by the provided BackoffTimer.
+//
+//	a.EventuallyWithBackoff(func() bool { return true; }, time.Second, assert.NewExponentialBackoffTimer(10*time.Millisecond, 2.0))
+func (a *Assertions) EventuallyWithBackoff(condition func() bool, waitFor time.Duration, tick BackoffTimer, msgAndArgs ...interface{}) bool {
+	if h, ok := a.t.(tHelper); ok {
+		h.Helper()
+	}
+	return EventuallyWithBackoff(a.t, condition, waitFor, tick, msgAndArgs...)
+}
+
 // EventuallyWithT asserts that given condition will be met in waitFor time,
 // periodically checking target function each tick. In contrast to Eventually,
 // it supplies a CollectT to the condition function, so that the condition
