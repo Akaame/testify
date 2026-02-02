@@ -2005,6 +2005,19 @@ type tHelper = interface {
 //
 //	assert.Eventually(t, func() bool { return true; }, time.Second, 10*time.Millisecond)
 func Eventually(t TestingT, condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) bool {
+	return eventually(t, condition, waitFor, LinearTimer(tick), msgAndArgs...)
+}
+
+// EventuallyWithBackoff asserts that given condition will be met in waitFor time,
+// periodically checking target function each tick, where the tick intervals
+// are determined by the provided BackoffTimer.
+//
+//	assert.EventuallyWithBackoff(t, func() bool { return true; }, time.Second, assert.NewExponentialBackoffTimer(10*time.Millisecond, 2.0))
+func EventuallyWithBackoff(t TestingT, condition func() bool, waitFor time.Duration, tick BackoffTimer, msgAndArgs ...interface{}) bool {
+	return eventually(t, condition, waitFor, tick, msgAndArgs...)
+}
+
+func eventually(t TestingT, condition func() bool, waitFor time.Duration, tick BackoffTimer, msgAndArgs ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
@@ -2015,7 +2028,7 @@ func Eventually(t TestingT, condition func() bool, waitFor time.Duration, tick t
 	timer := time.NewTimer(waitFor)
 	defer timer.Stop()
 
-	ticker := time.NewTicker(tick)
+	ticker := time.NewTicker(tick.Tick())
 	defer ticker.Stop()
 
 	var tickC <-chan time.Time
